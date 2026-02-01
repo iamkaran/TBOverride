@@ -44,40 +44,47 @@ class FileIO:
     
     
 class TBOverride:
-    def __init__(self):
-        self.root = Path("/etc/nginx/sites-available")
-        self.custom_assets = Path("/opt/custom_assets")
-        self.main_logo = Path("logo_title_white.svg")
+    def __init__(self, path: str):
+        
+        self.fileio = FileIO(path)
+        
+        self.ROOT = Path("/etc/nginx/sites-available")
+        self.CUSTOM_ASSETS = Path("/opt/custom_assets")
+        self.FILE_MAIN_LOGO = Path("logo_title_white.svg")
+        
+        self.MARKER_MAIN_LOGO = "$MAIN_LOGO$"
     
     def override_main_logo(self):
         '''Override the main logo in TB'''
         
-        exist = (self.root / self.main_logo).is_file()
+        exist = (self.CUSTOM_ASSETS / self.FILE_MAIN_LOGO).is_file()
         
         if exist is False:
-            raise FileNotFoundError(f"[X] {self.main_logo} not found in {self.root}!")
+            raise FileNotFoundError(f"[X] {self.FILE_MAIN_LOGO} not found in {self.CUSTOM_ASSETS}!")
         
-        OVERRIDE = f"""\
-            location = /assets/{self.main_logo} {{
-                alias {self.custom_assets / self.main_logo};
-                add_header Cache-Control "no-store";
-            }}
-        """
+        OVERRIDE = (
+            f"    location = /assets/{self.FILE_MAIN_LOGO} {{\n"
+            f"        alias {self.CUSTOM_ASSETS / self.FILE_MAIN_LOGO};\n"
+            f'        add_header Cache-Control "no-store";\n'
+            f"    }}\n"
+        )
+
+        print(f"[+] Overriding defualt main logo on thingsboard!")
         
-        print(OVERRIDE)
-
-TBOverride().override_main_logo()
-
-# CONF = r"tb-ce-wl\tb-proxyfasfas"
-
-# MARKER = "$MAIN_LOGO$"
-# LOCATION_BLOCK = """\
-#     location = /assets/logo_title_white.svg {
-#         alias /opt/custom/logo_title_white.svg;
-#         add_header Cache-Control "no-store";
-#     }
-
-# """
-
-# TBOverride(path=CONF).append_block(marker=MARKER, data=LOCATION_BLOCK)
-# # TBOverride(path=CONF).append_block(marker=MARKER, data=LOCATION_BLOCK)
+        self.fileio.insert_block(marker=self.MARKER_MAIN_LOGO, data=OVERRIDE)
+    
+    def main(self):
+        
+        self.override_main_logo()
+        
+        # Check configuration
+        result = subprocess.check_call(["sudo", "nginx", "-t"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if result == 0:
+            print(f"[+] NGINX Tests Passed!")
+            print(f"[+] Reloading NGINX")
+            reload = subprocess.check_call(["sudo", "systemctl", "reload", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            print(f"[X] NGINX Tests Failed!")
+        
+        
+TBOverride(path="/etc/nginx/sites-available/tb-proxy").main()
