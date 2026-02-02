@@ -64,15 +64,17 @@ class FileIO:
         for selector, new_value in css_selectors.items():
             
             # Find the full line and value of the variable
-            _value_regex = fr"{selector}:\s*[#]?((?:(?!px).)+)(?:px)?;"
-            _full_line_regex = fr"({selector}:\s*[#]?([^px]+)(?:px)?;)"
+            # _value_regex = fr"{selector}:\s*#?(.+?)(?:px)?;"
+            # _full_line_regex = fr"({selector}:\s*#?(.+?)(?:px)?;)"
             
-            match_value = re.search(_value_regex, vars_block)
-            match_line = re.search(_full_line_regex, vars_block)
+            _value_regex = rf"(?P<line>{re.escape(selector)}\s*:\s*#?(?P<val>.+?)(?:px)?;)"
+            m = re.search(_value_regex, vars_block)
             
-            old_full_line = match_line.group(1)
-            old_value = match_value.group(1)
-            
+            if m:
+                old_full_line = m.group("line")
+                old_value = m.group("val")
+            else:
+                raise ValueError(f"Regex Failed")
             # Append a unit if needed
             if "#" in old_full_line:
                 old_value = f"#{old_value}"
