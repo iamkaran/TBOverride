@@ -64,8 +64,8 @@ class FileIO:
         for selector, new_value in css_selectors.items():
             
             # Find the full line and value of the variable
-            _value_regex = fr"{selector}:\s*[#]?(.+)(?:px)?;"
-            _full_line_regex = fr"({selector}:\s*[#]?(.+)(?:px)?;)"
+            _value_regex = fr"{selector}:\s*[#]?([^px]+)(?:px)?;"
+            _full_line_regex = fr"({selector}:\s*[#]?([^px]+)(?:px)?;)"
             
             match_value = re.search(_value_regex, vars_block)
             match_line = re.search(_full_line_regex, vars_block)
@@ -77,10 +77,11 @@ class FileIO:
             if "#" in old_full_line:
                 old_value = f"#{old_value}"
                 new_value = f"#{new_value}" if "#" not in new_value else new_value
+                print(old_value, new_value)
             elif "px" in old_full_line:
                 old_value = f"{old_value}px"
                 new_value = f"{new_value}px" if "px" not in new_value else new_value
-            print(old_value, new_value)
+                print(old_value, new_value)
             # Apply the replacement value
             new_full_line = old_full_line.replace(old_value, new_value)
             
@@ -130,7 +131,7 @@ class TBOverride:
             raise ValueError("[X] Vars block markers not found or out of order in CSS.")
 
         new_var_block = self.fileio.override_css_value(old_file=old_full_text, css_selectors=elements)
-        print(new_var_block)
+        # print(new_var_block)
 
         new_full_text = old_full_text[:b] + new_var_block + old_full_text[e:]
         css_path.write_text(new_full_text, encoding="utf-8")
@@ -158,8 +159,9 @@ if __name__ == "__main__":
     old_file = css_path.read_text(encoding="utf-8")
     
     selectors = {
-        "--tb-logo-w": "120px",
-        "--tb-topbar-bg": "#FF0000"
+        "--tb-logo-w": "156px",
+        "--tb-logo-h": "50px",
+        "--tb-topbar-bg": "#1F1F1F"
     }
     
     main(conf_path=conf_path, css_path=css_path, overrides=selectors)
