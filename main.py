@@ -64,7 +64,7 @@ class FileIO:
         for selector, new_value in css_selectors.items():
             
             # Find the full line and value of the variable
-            _value_regex = fr"{selector}:\s*[#]?([^px]+)(?:px)?;"
+            _value_regex = fr"{selector}:\s*[#]?((?:(?!px).)+)(?:px)?;"
             _full_line_regex = fr"({selector}:\s*[#]?([^px]+)(?:px)?;)"
             
             match_value = re.search(_value_regex, vars_block)
