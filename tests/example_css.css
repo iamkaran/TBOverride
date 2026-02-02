@@ -1,0 +1,135 @@
+/* =====================================================================
+   >>> TB_CUSTOM_THEME_VARS_BEGIN
+   Update ONLY inside this block from your Python script.
+   ===================================================================== */
+:root{
+  /* --- Brand --- */
+  --tb-brand:        #ff7a00;
+  --tb-accent:       #22c55e;
+
+  /* --- App colors --- */
+  --tb-topbar-bg:    #282828;
+  --tb-sidebar-bg:   #424040;
+  --tb-main-bg:      #0a1320;
+  --tb-text:         #e5e7eb;
+
+  /* --- Button styling --- */
+  --tb-btn-radius:   10px;
+
+  /* --- Logo sizing (sidebar) --- */
+  --tb-logo-w:       150px;
+  --tb-logo-h:       36px;
+  --tb-logo-pad-x:   12px;
+  --tb-logo-pad-y:   10px;
+
+  /* --- Logo alignment: left|center --- */
+  --tb-logo-align:   left;
+}
+/* =====================================================================
+   <<< TB_CUSTOM_THEME_VARS_END
+   ===================================================================== */
+
+
+/* =====================================================================
+   >>> TB_CUSTOM_THEME_RULES_BEGIN
+   DO NOT edit these unless you are changing behavior/selectors.
+   ===================================================================== */
+
+/* -------------------------
+   TOP BAR
+   ------------------------- */
+mat-toolbar, .mat-toolbar, .mat-mdc-toolbar,
+.tb-header mat-toolbar, .tb-header .mat-toolbar, .tb-header .mat-mdc-toolbar{
+  background: var(--tb-topbar-bg) !important;
+  color: var(--tb-text) !important;
+}
+
+/* -------------------------
+   SIDEBAR
+   ------------------------- */
+.tb-side-menu,
+.tb-side-menu-container,
+mat-sidenav, .mat-drawer, .mat-sidenav{
+  background: var(--tb-sidebar-bg) !important;
+  color: var(--tb-text) !important;
+}
+
+.tb-side-menu * ,
+mat-sidenav * , .mat-drawer * , .mat-sidenav *{
+  color: var(--tb-text) !important;
+}
+
+/* -------------------------
+   MAIN AREA
+   ------------------------- */
+.tb-content, .tb-main,
+.mat-sidenav-content, mat-sidenav-content,
+.mat-app-background, body{
+  background: var(--tb-main-bg) !important;
+  color: var(--tb-text) !important;
+}
+
+/* -------------------------
+   BUTTONS / LINKS (best-effort)
+   ------------------------- */
+button.mat-mdc-raised-button,
+button.mat-mdc-unelevated-button{
+  background: var(--tb-brand) !important;
+  color: #0b0f16 !important;
+  border-radius: var(--tb-btn-radius) !important;
+}
+
+a{
+  color: var(--tb-brand) !important;
+}
+
+/* -------------------------
+   LOGO RESIZE (SIDEBAR)
+   ------------------------- */
+
+/* Prevent the header/logo container from clamping */
+.tb-side-menu mat-toolbar,
+.tb-side-menu .mat-toolbar,
+.tb-side-menu .mat-mdc-toolbar,
+.tb-side-menu .tb-logo,
+.tb-side-menu .logo,
+.tb-side-menu .logo-container,
+.tb-side-menu a.ng-star-inserted{
+  min-height: calc(var(--tb-logo-h) + (var(--tb-logo-pad-y) * 2)) !important;
+  height: calc(var(--tb-logo-h) + (var(--tb-logo-pad-y) * 2)) !important;
+  padding: var(--tb-logo-pad-y) var(--tb-logo-pad-x) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: var(--tb-logo-align) !important;
+}
+
+/* Case A: logo is an <img> */
+img[src*="/assets/logo_title_white.svg"],
+img[src*="logo_title_white.svg"]{
+  width: var(--tb-logo-w) !important;
+  height: var(--tb-logo-h) !important;
+  max-width: var(--tb-logo-w) !important;
+  max-height: var(--tb-logo-h) !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+/* Case B: inline svg */
+.tb-side-menu svg{
+  width: var(--tb-logo-w) !important;
+  height: var(--tb-logo-h) !important;
+}
+
+/* Case C: background-image */
+.tb-side-menu [style*="logo_title_white.svg"],
+.tb-side-menu [style*="/assets/logo_title_white.svg"]{
+  background-size: var(--tb-logo-w) var(--tb-logo-h) !important;
+  background-repeat: no-repeat !important;
+  background-position: left center !important;
+  min-width: var(--tb-logo-w) !important;
+  min-height: var(--tb-logo-h) !important;
+}
+
+/* =====================================================================
+   <<< TB_CUSTOM_THEME_RULES_END
+   ===================================================================== */

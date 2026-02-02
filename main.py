@@ -7,10 +7,10 @@ MAINLOGO_MARKER = "$MAINLOGO$"
 
 
 class FileIO:
-    def __init__(self, path: str | Path):
-        self.conf = Path(path)
+    def __init__(self, conf_path: str | Path, css_path: str | Path):
+        self.conf = Path(conf_path)
 
-        self.CSS_FILE = Path("/opt/custom_assets/custom-theme.css")
+        self.CSS_FILE = Path(css_path)
 
         self.VARS_BEGIN = ">>> TB_CUSTOM_THEME_VARS_BEGIN"
         self.VARS_END = "<<< TB_CUSTOM_THEME_VARS_END"
@@ -46,37 +46,52 @@ class FileIO:
         self.write_file(updated)
         return True
 
-    def override_css_value(self, var_block: str, css_selectors: Dict[str, str]) -> str:
+    def override_css_value(self, old_file: str, css_selectors: Dict[str, str]) -> str:
         """
         Replace values of CSS vars inside var_block only.
         css_selectors example: {"--tb-logo-w":"150px", "--tb-topbar-bg":"#ffd900"}
         """
-        block = var_block
-
-        for sel, new_val in css_selectors.items():
-            new_val = str(new_val).strip()
-
-            # Match lines like:   --tb-logo-w:   150px;
-            m = re.search(
-                rf"(?m)^(?P<prefix>\s*{re.escape(sel)}\s*:\s*)(?P<val>[^;]+?)(?P<suffix>\s*;)",
-                block,
-            )
-            if not m:
-                # Skip silently (or raise if you want strict mode)
-                continue
-
-            block = (
-                block[: m.start()]
-                + f"{m.group('prefix')}{new_val}{m.group('suffix')}"
-                + block[m.end() :]
-            )
-
-        return block
-
+        # Find index of the VARS bloc
+        start = old_file.find(self.VARS_BEGIN)
+        end = old_file.find(self.VARS_END)
+        
+        # VARS Block as string
+        vars_block = old_file[start:end]
+        new_vars_block = vars_block
+        
+        print(css_selectors)
+        
+        for selector, new_value in css_selectors.items():
+            
+            # Find the full line and value of the variable
+            _value_regex = fr"{selector}:\s*[#]?(.+)(?:px)?;"
+            _full_line_regex = fr"({selector}:\s*[#]?(.+)(?:px)?;)"
+            
+            match_value = re.search(_value_regex, vars_block)
+            match_line = re.search(_full_line_regex, vars_block)
+            
+            old_full_line = match_line.group(1)
+            old_value = match_value.group(1)
+            
+            # Append a unit if needed
+            if "#" in old_full_line:
+                old_value = f"#{old_value}"
+                new_value = f"#{new_value}" if "#" not in new_value else new_value
+            elif "px" in old_full_line:
+                old_value = f"{old_value}px"
+                new_value = f"{new_value}px" if "px" not in new_value else new_value
+            print(old_value, new_value)
+            # Apply the replacement value
+            new_full_line = old_full_line.replace(old_value, new_value)
+            
+            new_vars_block = new_vars_block.replace(old_full_line, new_full_line)
+        
+        return new_vars_block
+            
 
 class TBOverride:
-    def __init__(self, path: str):
-        self.fileio = FileIO(path)
+    def __init__(self, conf_path: str, css_path: str):
+        self.fileio = FileIO(conf_path=conf_path, css_path=css_path)
 
         self.ROOT = Path("/etc/nginx/sites-available")
         self.CUSTOM_ASSETS = Path("/opt/custom_assets")
@@ -108,38 +123,43 @@ class TBOverride:
         """Replace vars inside the TB_CUSTOM_THEME_VARS block in the CSS file."""
         css_path = self.fileio.CSS_FILE
         old_full_text = css_path.read_text(encoding="utf-8")
-
+        
         b = old_full_text.find(self.fileio.VARS_BEGIN)
         e = old_full_text.find(self.fileio.VARS_END)
         if b == -1 or e == -1 or e <= b:
             raise ValueError("[X] Vars block markers not found or out of order in CSS.")
 
-        var_block = old_full_text[b:e]
-        new_var_block = self.fileio.override_css_value(var_block, elements)
+        new_var_block = self.fileio.override_css_value(old_file=old_full_text, css_selectors=elements)
+        print(new_var_block)
 
         new_full_text = old_full_text[:b] + new_var_block + old_full_text[e:]
         css_path.write_text(new_full_text, encoding="utf-8")
-
         print("[+] Theme variables updated in CSS.")
 
-    def main(self) -> None:
-        theme_vars = {
-            "--tb-logo-w": "150px",
-            "--tb-logo-h": "36px",
-            "--tb-topbar-bg": "#282828",
-            "--tb-sidebar-bg": "#424040",
-            "--tb-main-bg": "#0a1320",
-            "--tb-text": "#e5e7eb",
-        }
+def main(conf_path: str, css_path: str, overrides: dict) -> None:
+    
+    tbov = TBOverride(conf_path=conf_path, css_path=css_path)
+    
+    tbov.override_main_logo()
+    tbov.override_theme(elements=overrides)
 
-        self.override_main_logo()
-        self.override_theme(elements=theme_vars)
+    # Check + reload nginx
+    subprocess.check_call(["sudo", "nginx", "-t"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print("[+] NGINX Tests Passed!")
+    subprocess.check_call(["sudo", "systemctl", "reload", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print("[+] Reloaded NGINX.")
 
-        # Check + reload nginx
-        subprocess.check_call(["sudo", "nginx", "-t"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("[+] NGINX Tests Passed!")
-        subprocess.check_call(["sudo", "systemctl", "reload", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("[+] Reloaded NGINX.")
-
-
-TBOverride(path="/etc/nginx/sites-available/tb-proxy").main()
+if __name__ == "__main__":
+    conf_path = Path("/etc/nginx/sites-available/tb-proxy")
+    css_path = Path("/opt/custom_assets/custom-theme.css")
+    # conf_path = Path("tests/example_tb_proxy")
+    # css_file = Path("tests/example_css.css")
+    
+    old_file = css_path.read_text(encoding="utf-8")
+    
+    selectors = {
+        "--tb-logo-w": "120px",
+        "--tb-topbar-bg": "#FF0000"
+    }
+    
+    main(conf_path=conf_path, css_path=css_path, overrides=selectors)

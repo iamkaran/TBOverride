@@ -1,0 +1,44 @@
+server {
+    listen 8080;
+    server_name _; # Replace with your domain name or public IP address
+
+    # ============================
+    # Static overrides (your stuff)
+    # ============================
+
+    # $MAIN_LOGO$
+    location = /assets/logo_title_white.svg {
+        alias /opt/custom_assets/logo_title_white.svg;
+        add_header Cache-Control "no-store";
+    }
+
+    # $CUSTOM_THEME_CSS$
+    location = /assets/custom-theme.css {
+        alias /opt/custom_assets/custom-theme.css;
+        add_header Cache-Control "no-store";
+    }
+
+    # ============================
+    # Reverse proxy to ThingsBoard
+    # ============================
+    location / {
+        proxy_pass http://localhost:8081/; # ThingsBoard backend
+
+        # --- Client info headers ---
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # --- CSS injection ---
+        # sub_filter won't work if upstream sends gzip/br (compressed HTML)
+        proxy_set_header Accept-Encoding "";
+
+        # Inject stylesheet before </head>
+        sub_filter '</head>' '<link rel="stylesheet" href="/assets/custom-theme.css?v=11"></head>';
+        sub_filter_once on;
+
+        # Optional but useful: don't buffer huge responses weirdly
+        proxy_buffering off;
+    }
+}
