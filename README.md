@@ -1,4 +1,5 @@
 # TBOverride 🔧 - White label for ThingsBoard CE
+NOTE: Under development 🚧
 ---
 ![alt text](image.png)
 
